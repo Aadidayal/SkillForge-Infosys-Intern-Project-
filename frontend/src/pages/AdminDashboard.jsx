@@ -12,7 +12,9 @@ import {
   PencilIcon,
   TrashIcon,
   UserPlusIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  VideoCameraIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -49,7 +51,10 @@ const AdminDashboard = () => {
         totalUsers: 1250,
         totalCourses: 45,
         totalRevenue: 125000,
-        activeUsers: 890
+        activeUsers: 890,
+        totalVideos: 324,
+        videoStorage: '2.1 TB',
+        videosWatchTime: '15,245 hours'
       });
       setUsers([
         { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', role: 'STUDENT', createdAt: '2024-01-15', enabled: true },
@@ -227,6 +232,69 @@ const AdminDashboard = () => {
                     </dt>
                     <dd className="text-lg font-medium text-gray-900">
                       {dashboardData?.activeUsers || 890}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Video Statistics */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <VideoCameraIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Total Videos
+                    </dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardData?.totalVideos || 324}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <CloudArrowUpIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Video Storage
+                    </dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardData?.videoStorage || '2.1 TB'}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ChartBarIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Watch Time
+                    </dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardData?.videosWatchTime || '15,245 hours'}
                     </dd>
                   </dl>
                 </div>

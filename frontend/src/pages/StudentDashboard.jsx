@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { studentAPI } from '../utils/api';
 import Navbar from '../components/Navbar';
+import VideoPlayer from '../components/VideoPlayer';
+import { placeholders } from '../utils/placeholder';
 import {
   BookOpenIcon,
   ClockIcon,
   AcademicCapIcon,
   TrophyIcon,
   PlayIcon,
-  StarIcon
+  StarIcon,
+  VideoCameraIcon
 } from '@heroicons/react/24/outline';
 
 const StudentDashboard = () => {
@@ -16,6 +19,7 @@ const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCourseForVideos, setSelectedCourseForVideos] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -49,7 +53,7 @@ const StudentDashboard = () => {
       progress: 75,
       duration: '12 hours',
       rating: 4.8,
-      thumbnail: 'https://via.placeholder.com/300x200?text=React+Course'
+      thumbnail: placeholders.reactCourse
     },
     {
       id: 2,
@@ -58,7 +62,7 @@ const StudentDashboard = () => {
       progress: 40,
       duration: '18 hours',
       rating: 4.9,
-      thumbnail: 'https://via.placeholder.com/300x200?text=JavaScript+Course'
+      thumbnail: placeholders.javascriptCourse
     },
     {
       id: 3,
@@ -67,7 +71,7 @@ const StudentDashboard = () => {
       progress: 20,
       duration: '15 hours',
       rating: 4.7,
-      thumbnail: 'https://via.placeholder.com/300x200?text=Database+Course'
+      thumbnail: placeholders.databaseCourse
     }
   ];
 
@@ -78,7 +82,7 @@ const StudentDashboard = () => {
       instructor: 'Sarah Wilson',
       duration: '14 hours',
       rating: 4.6,
-      thumbnail: 'https://via.placeholder.com/300x200?text=NodeJS+Course'
+      thumbnail: placeholders.nodejsCourse
     },
     {
       id: 5,
@@ -86,7 +90,7 @@ const StudentDashboard = () => {
       instructor: 'Alex Brown',
       duration: '8 hours',
       rating: 4.5,
-      thumbnail: 'https://via.placeholder.com/300x200?text=CSS+Course'
+      thumbnail: placeholders.cssCourse
     }
   ];
 
@@ -242,10 +246,36 @@ const StudentDashboard = () => {
                       ></div>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => setSelectedCourseForVideos(selectedCourseForVideos === course.id ? null : course.id)}
+                    className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <VideoCameraIcon className="w-4 h-4" />
+                    <span>{selectedCourseForVideos === course.id ? 'Hide Videos' : 'Watch Videos'}</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Video Player Section */}
+          {selectedCourseForVideos && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Course Videos - {mockCourses.find(c => c.id === selectedCourseForVideos)?.title}
+                </h3>
+                <button
+                  onClick={() => setSelectedCourseForVideos(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <VideoPlayer courseId={selectedCourseForVideos} />
+            </div>
+          )}
         </div>
 
         {/* Recommended Courses */}
