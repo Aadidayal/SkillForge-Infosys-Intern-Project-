@@ -33,17 +33,31 @@ build/
 .vscode/
 
 ### Security - Never commit these files ###
-src/main/resources/application.properties
-application-local.properties
+# Configuration files with sensitive data
+application-dev.properties
 application-prod.properties
+application-local.properties
+*.properties.backup
 *.env
-.env.local
-.env.production
+.env*
+
+# SQL files with user data
+add_users_sql.sql
+user-data.sql
+test-data.sql
+*.sql.backup
 
 ### SkillForge Specific ###
 PROJECT_SUMMARY.md
 role_testing.http
-add_users_sql.sql
 frontend/node_modules/
 frontend/dist/
 frontend/.env*
+
+# Logs and temporary files
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.orig

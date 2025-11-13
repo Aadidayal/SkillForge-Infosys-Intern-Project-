@@ -45,35 +45,47 @@ const StudentDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const mockCourses = [
-    {
-      id: 1,
-      title: 'Introduction to React',
-      instructor: 'John Doe',
-      progress: 75,
-      duration: '12 hours',
-      rating: 4.8,
-      thumbnail: placeholders.reactCourse
-    },
-    {
-      id: 2,
-      title: 'Advanced JavaScript',
-      instructor: 'Jane Smith',
-      progress: 40,
-      duration: '18 hours',
-      rating: 4.9,
-      thumbnail: placeholders.javascriptCourse
-    },
-    {
-      id: 3,
-      title: 'Database Design',
-      instructor: 'Mike Johnson',
-      progress: 20,
-      duration: '15 hours',
-      rating: 4.7,
-      thumbnail: placeholders.databaseCourse
-    }
-  ];
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState('');
+
+  useEffect(() => {
+    const fetchAvailableCourses = async () => {
+      try {
+        setCoursesLoading(true);
+        const response = await fetch('/api/courses/public');
+        const result = await response.json();
+        
+        if (result.success) {
+          // Transform backend data to match frontend expectations
+          const transformedCourses = result.courses.map(course => ({
+            id: course.id,
+            title: course.title,
+            instructor: `${course.instructor.firstName} ${course.instructor.lastName}`,
+            instructorEmail: course.instructor.email,
+            description: course.description,
+            price: course.price,
+            duration: course.videos?.length ? `${course.videos.length} video${course.videos.length > 1 ? 's' : ''}` : '0 videos',
+            rating: 4.5, // Default rating since we don't have ratings yet
+            thumbnail: placeholders.reactCourse, // Use placeholder for now
+            videos: course.videos || [],
+            status: course.status,
+            createdAt: course.createdAt
+          }));
+          setAvailableCourses(transformedCourses);
+        } else {
+          setCoursesError('Failed to load courses');
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        setCoursesError('Error loading courses');
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+
+    fetchAvailableCourses();
+  }, []);
 
   const mockRecommendations = [
     {
@@ -94,7 +106,7 @@ const StudentDashboard = () => {
     }
   ];
 
-  if (loading) {
+  if (loading || coursesLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -203,11 +215,26 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Current Courses */}
+        {/* Available Courses */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Continue Learning</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {mockCourses.map((course) => (
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Courses</h2>
+          
+          {coursesLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="spinner"></div>
+            </div>
+          ) : coursesError ? (
+            <div className="text-red-600 text-center p-4 bg-red-50 rounded-lg">
+              {coursesError}
+            </div>
+          ) : availableCourses.length === 0 ? (
+            <div className="text-gray-600 text-center p-8 bg-gray-50 rounded-lg">
+              <BookOpenIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p>No courses available yet. Check back later!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {availableCourses.map((course) => (
               <div key={course.id} className="bg-white overflow-hidden shadow rounded-lg card-hover">
                 <div className="relative">
                   <img
@@ -224,7 +251,10 @@ const StudentDashboard = () => {
                 </div>
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-2">{course.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">by {course.instructor}</p>
+                  <p className="text-sm text-gray-600 mb-2">by {course.instructor}</p>
+                  {course.description && (
+                    <p className="text-sm text-gray-500 mb-3">{course.description}</p>
+                  )}
                   
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-gray-500">{course.duration}</span>
@@ -235,15 +265,9 @@ const StudentDashboard = () => {
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Progress</span>
-                      <span>{course.progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${course.progress}%` }}
-                      ></div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Price:</span>
+                      <span className="text-lg font-semibold text-green-600">${course.price}</span>
                     </div>
                   </div>
 
@@ -256,27 +280,28 @@ const StudentDashboard = () => {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Video Player Section */}
-          {selectedCourseForVideos && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Course Videos - {mockCourses.find(c => c.id === selectedCourseForVideos)?.title}
-                </h3>
-                <button
-                  onClick={() => setSelectedCourseForVideos(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-              <VideoPlayer courseId={selectedCourseForVideos} />
+              ))}
             </div>
           )}
         </div>
+
+        {/* Video Player Section */}
+        {selectedCourseForVideos && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Course Videos - {availableCourses.find(c => c.id === selectedCourseForVideos)?.title}
+              </h3>
+              <button
+                onClick={() => setSelectedCourseForVideos(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <VideoPlayer courseId={selectedCourseForVideos} />
+          </div>
+        )}
 
         {/* Recommended Courses */}
         <div>

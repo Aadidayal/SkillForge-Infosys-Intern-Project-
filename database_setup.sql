@@ -7,7 +7,8 @@ CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 -- 2. Create a dedicated user for the application (optional but recommended)
-CREATE USER IF NOT EXISTS 'skillforge_user'@'localhost' IDENTIFIED BY 'skillforge123';
+-- Replace 'YOUR_SECURE_PASSWORD' with a strong password
+CREATE USER IF NOT EXISTS 'skillforge_user'@'localhost' IDENTIFIED BY 'YOUR_SECURE_PASSWORD';
 
 -- 3. Grant privileges to the user
 GRANT ALL PRIVILEGES ON skillforge_db.* TO 'skillforge_user'@'localhost';

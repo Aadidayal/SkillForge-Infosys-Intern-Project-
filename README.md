@@ -1,9 +1,22 @@
-# SkillForge - Smart Learning Platform
+# SkillForge - Smart Learning Platform 🚀
 
 ## 🧠 What You're Building
 
 SkillForge is a smart learning platform that personalizes learning and exam generation using AI (like GPT APIs).
 It's like combining Coursera + ChatGPT, where each student gets custom lessons and auto-generated quizzes based on their level and progress.
+
+## 🔐 Security First Setup
+
+**⚠️ IMPORTANT:** This project uses secure environment-based configuration. Before running:
+
+1. **Copy development configuration:**
+   ```bash
+   cp application-dev.properties src/main/resources/application-dev.properties
+   ```
+
+2. **Set up your credentials** in `application-dev.properties` (see SECURITY.md for details)
+
+3. **Never commit sensitive files** - they're protected by .gitignore
 
 ## 🛠️ Current Implementation Status
 

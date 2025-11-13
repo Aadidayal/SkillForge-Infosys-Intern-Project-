@@ -25,9 +25,7 @@ public class CourseController {
     
     private final CourseRepository courseRepository;
     
-    /**
-     * Get all courses for instructor
-     */
+
     @GetMapping("/instructor")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getInstructorCourses(Authentication auth) {
