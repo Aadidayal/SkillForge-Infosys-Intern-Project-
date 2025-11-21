@@ -68,6 +68,11 @@ public class ModuleContent {
     @Column(name = "is_free", nullable = false)
     private Boolean isFree = false; // Some content can be free preview
     
+    // One-to-one relationship with Quiz (for QUIZ content type)
+    @OneToOne(mappedBy = "moduleContent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private Quiz quiz;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
