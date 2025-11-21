@@ -47,10 +47,16 @@ public class Course {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    // One course can have many videos
+    // One course can have many videos (legacy - keeping for backward compatibility)
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Video> videos;
+    
+    // One course can have many modules (NEW STRUCTURE)
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    @OrderBy("moduleOrder ASC")
+    private List<CourseModule> courseModules;
     
     // One course can have many enrollments
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
