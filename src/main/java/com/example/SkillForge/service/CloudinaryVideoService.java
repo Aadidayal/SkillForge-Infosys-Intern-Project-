@@ -290,4 +290,96 @@ public class CloudinaryVideoService {
             return null;
         }
     }
+
+    /**
+     * Upload video to Cloudinary and return upload result
+     * This method is used by ModuleContentController
+     */
+    public Map<String, Object> uploadVideo(MultipartFile videoFile) throws IOException {
+        try {
+            // Validate file
+            if (videoFile.isEmpty() || !isVideoFile(videoFile)) {
+                throw new IllegalArgumentException("Invalid video file");
+            }
+            
+            // Check file size (100MB limit for free tier)
+            if (videoFile.getSize() > 100 * 1024 * 1024) {
+                throw new IllegalArgumentException("Video file too large. Maximum 100MB allowed.");
+            }
+            
+            // Generate unique public ID
+            String publicId = String.format("skillforge/videos/video_%s", 
+                UUID.randomUUID().toString().substring(0, 12)
+            );
+            
+            // Upload parameters
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                "public_id", publicId,
+                "resource_type", "video",
+                "quality", "auto:good",
+                "format", "mp4"
+            );
+            
+            // Upload to Cloudinary
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(videoFile.getBytes(), uploadParams);
+            
+            // Add thumbnail URL
+            uploadResult.put("thumbnail_url", generateThumbnailUrl(publicId));
+            
+            return uploadResult;
+            
+        } catch (Exception e) {
+            logger.error("Failed to upload video to Cloudinary", e);
+            throw new RuntimeException("Failed to upload video: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Upload PDF to Cloudinary as raw file
+     */
+    public Map<String, Object> uploadPdf(MultipartFile pdfFile) throws IOException {
+        try {
+            // Validate file
+            if (pdfFile.isEmpty()) {
+                throw new IllegalArgumentException("PDF file is empty");
+            }
+            
+            // Validate file type
+            String contentType = pdfFile.getContentType();
+            if (contentType == null || !contentType.equals("application/pdf")) {
+                throw new IllegalArgumentException("Only PDF files are allowed");
+            }
+            
+            // Check file size (10MB limit for PDFs)
+            if (pdfFile.getSize() > 10 * 1024 * 1024) {
+                throw new IllegalArgumentException("PDF file too large. Maximum 10MB allowed.");
+            }
+            
+            // Generate unique public ID
+            String publicId = String.format("skillforge/pdfs/pdf_%s", 
+                UUID.randomUUID().toString().substring(0, 12)
+            );
+            
+            // Upload parameters for raw file
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                "public_id", publicId,
+                "resource_type", "raw", // Important: raw for PDF files
+                "format", "pdf"
+            );
+            
+            // Upload to Cloudinary
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(pdfFile.getBytes(), uploadParams);
+            
+            logger.info("PDF uploaded successfully: {}", uploadResult.get("secure_url"));
+            return uploadResult;
+            
+        } catch (Exception e) {
+            logger.error("Failed to upload PDF to Cloudinary", e);
+            throw new RuntimeException("Failed to upload PDF: " + e.getMessage());
+        }
+    }
 }
