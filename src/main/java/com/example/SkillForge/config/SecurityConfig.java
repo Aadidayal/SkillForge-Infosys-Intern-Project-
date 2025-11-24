@@ -40,10 +40,16 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/courses/public").permitAll()
+                        .requestMatchers("/api/courses/public/**").permitAll()
+                        .requestMatchers("/api/courses").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/instructor/**").hasRole("INSTRUCTOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/courses/**").authenticated()
+                        .requestMatchers("/api/videos/**").authenticated()
+                        .requestMatchers("/api/modules/**").authenticated()
+                        .requestMatchers("/api/quizzes/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

@@ -1,0 +1,30 @@
+# SkillForge Environment Configuration Template
+# Copy this file to application-dev.properties and fill in your actual values
+
+# Database Configuration
+DB_USERNAME=root
+DB_PASSWORD=your_mysql_password_here
+SHOW_SQL=false
+
+# JWT Configuration (Generate a secure random key for production)
+JWT_SECRET=your_jwt_secret_key_here_min_256_bits
+JWT_EXPIRATION=86400000
+
+# Cloudinary Configuration (for file uploads)
+# Sign up at https://cloudinary.com to get these values
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Email Configuration (if implementing email features)
+# MAIL_HOST=smtp.gmail.com
+# MAIL_PORT=587
+# MAIL_USERNAME=your_email@gmail.com
+# MAIL_PASSWORD=your_app_password
+
+# Security Notes:
+# 1. Never commit the actual application-dev.properties file
+# 2. Use strong, unique passwords and secrets
+# 3. For JWT_SECRET, use at least 256 bits (32+ characters)
+# 4. In production, use environment variables instead of files
+# 5. Rotate secrets regularly

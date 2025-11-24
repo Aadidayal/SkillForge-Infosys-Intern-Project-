@@ -51,8 +51,8 @@ export const studentAPI = {
 export const instructorAPI = {
   getDashboard: () => api.get('/instructor/dashboard'),
   getProfile: () => api.get('/instructor/profile'),
-  getCourses: () => api.get('/instructor/courses'),
-  createCourse: (courseData) => api.post('/instructor/courses', courseData),
+  getCourses: () => api.get('/courses/instructor'),
+  createCourse: (courseData) => api.post('/courses', courseData),
 };
 
 export const adminAPI = {
@@ -61,6 +61,20 @@ export const adminAPI = {
   createUser: (userData) => api.post('/admin/users', userData),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
   getStats: () => api.get('/admin/stats'),
+};
+
+// Course API calls
+export const courseAPI = {
+  getAllCourses: () => api.get('/courses'),
+  getCourseById: (id) => api.get(`/courses/${id}`),
+  getInstructorCourses: () => api.get('/courses/instructor'),
+  createCourse: (courseData) => api.post('/courses', courseData),
+  updateCourse: (id, courseData) => api.put(`/courses/${id}`, courseData),
+  deleteCourse: (id) => api.delete(`/courses/${id}`),
+  getCourseModules: (courseId) => api.get(`/courses/${courseId}/modules`),
+  createModule: (courseId, moduleData) => api.post(`/courses/${courseId}/modules`, moduleData),
+  getModuleContent: (moduleId) => api.get(`/modules/${moduleId}/content`),
+  createContent: (moduleId, contentData) => api.post(`/modules/${moduleId}/content`, contentData),
 };
 
 export default api;

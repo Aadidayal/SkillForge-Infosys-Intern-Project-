@@ -3,6 +3,8 @@ import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext();
 
+export { AuthContext };
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -24,10 +26,11 @@ export const AuthProvider = ({ children }) => {
         
         if (decodedToken.exp > currentTime) {
           setUser({
-            id: decodedToken.sub,
-            email: decodedToken.email,
+            id: decodedToken.userId,
+            email: decodedToken.sub,
             role: decodedToken.role,
-            name: decodedToken.name
+            firstName: decodedToken.firstName || '',
+            lastName: decodedToken.lastName || ''
           });
         } else {
           // Token expired
@@ -48,10 +51,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const decodedToken = jwtDecode(newToken);
       setUser({
-        id: decodedToken.sub,
-        email: decodedToken.email,
+        id: decodedToken.userId,
+        email: decodedToken.sub,
         role: decodedToken.role,
-        name: decodedToken.name
+        firstName: decodedToken.firstName || '',
+        lastName: decodedToken.lastName || ''
       });
     } catch (error) {
       console.error('Invalid token during login:', error);

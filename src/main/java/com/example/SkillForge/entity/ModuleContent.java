@@ -2,6 +2,7 @@ package com.example.SkillForge.entity;
 
 import com.example.SkillForge.enums.ContentType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

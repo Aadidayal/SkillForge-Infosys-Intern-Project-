@@ -4,12 +4,11 @@ import com.example.SkillForge.entity.*;
 import com.example.SkillForge.enums.AttemptStatus;
 import com.example.SkillForge.enums.ContentType;
 import com.example.SkillForge.repository.*;
-import com.example.SkillForge.security.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -39,20 +38,14 @@ public class QuizController {
     @Autowired
     private ModuleContentRepository moduleContentRepository;
 
-    @Autowired
-    private JWTUtil jwtUtil;
+
 
     // Create quiz for module content
     @PostMapping("/content/{contentId}")
-    public ResponseEntity<?> createQuiz(@PathVariable Long contentId, @RequestBody Quiz quizData, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> createQuiz(@PathVariable Long contentId, @RequestBody Quiz quizData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify module content exists and belongs to instructor
             Optional<ModuleContent> contentOpt = moduleContentRepository.findById(contentId);
@@ -117,15 +110,10 @@ public class QuizController {
 
     // Add question to quiz
     @PostMapping("/{quizId}/questions")
-    public ResponseEntity<?> addQuestion(@PathVariable Long quizId, @RequestBody QuizQuestion questionData, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> addQuestion(@PathVariable Long quizId, @RequestBody QuizQuestion questionData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify quiz belongs to instructor
             Optional<Quiz> quizOpt = quizRepository.findById(quizId);
@@ -160,15 +148,10 @@ public class QuizController {
 
     // Add option to question
     @PostMapping("/questions/{questionId}/options")
-    public ResponseEntity<?> addOption(@PathVariable Long questionId, @RequestBody QuestionOption optionData, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> addOption(@PathVariable Long questionId, @RequestBody QuestionOption optionData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify question belongs to instructor
             Optional<QuizQuestion> questionOpt = questionRepository.findById(questionId);
@@ -200,16 +183,11 @@ public class QuizController {
     }
 
     // Start quiz attempt
-    @PostMapping("/{quizId}/start")
-    public ResponseEntity<?> startQuizAttempt(@PathVariable Long quizId, HttpServletRequest request) {
+    @PostMapping("/{quizId}/attempts")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> startQuizAttempt(@PathVariable Long quizId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User student = jwtUtil.getUserFromToken(token);
+            User student = (User) auth.getPrincipal();
             
             // Verify quiz exists and is published
             Optional<Quiz> quizOpt = quizRepository.findById(quizId);
@@ -251,16 +229,11 @@ public class QuizController {
     }
 
     // Submit answer
-    @PostMapping("/attempts/{attemptId}/answer")
-    public ResponseEntity<?> submitAnswer(@PathVariable Long attemptId, @RequestBody Map<String, Object> answerData, HttpServletRequest request) {
+    @PostMapping("/attempts/{attemptId}/answers")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> submitAnswer(@PathVariable Long attemptId, @RequestBody Map<String, Object> answerData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User student = jwtUtil.getUserFromToken(token);
+            User student = (User) auth.getPrincipal();
             
             // Verify attempt belongs to student
             Optional<QuizAttempt> attemptOpt = attemptRepository.findById(attemptId);
@@ -317,15 +290,10 @@ public class QuizController {
 
     // Complete quiz attempt
     @PostMapping("/attempts/{attemptId}/complete")
-    public ResponseEntity<?> completeAttempt(@PathVariable Long attemptId, HttpServletRequest request) {
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> completeAttempt(@PathVariable Long attemptId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User student = jwtUtil.getUserFromToken(token);
+            User student = (User) auth.getPrincipal();
             
             // Verify attempt belongs to student
             Optional<QuizAttempt> attemptOpt = attemptRepository.findById(attemptId);
@@ -383,16 +351,11 @@ public class QuizController {
     }
 
     // Get student's quiz attempts
-    @GetMapping("/{quizId}/attempts")
-    public ResponseEntity<?> getStudentAttempts(@PathVariable Long quizId, HttpServletRequest request) {
+    @GetMapping("/{quizId}/attempts/my")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> getStudentAttempts(@PathVariable Long quizId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User student = jwtUtil.getUserFromToken(token);
+            User student = (User) auth.getPrincipal();
             
             List<QuizAttempt> attempts = attemptRepository.findByQuizIdAndStudentIdOrderByAttemptNumberDesc(quizId, student.getId());
             return ResponseEntity.ok(Map.of("attempts", attempts));
@@ -403,16 +366,11 @@ public class QuizController {
     }
 
     // Publish/Unpublish quiz (instructor only)
-    @PutMapping("/{quizId}/publish")
-    public ResponseEntity<?> toggleQuizPublish(@PathVariable Long quizId, @RequestParam boolean published, HttpServletRequest request) {
+    @PatchMapping("/{quizId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> toggleQuizPublish(@PathVariable Long quizId, @RequestParam boolean published, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify quiz belongs to instructor
             Optional<Quiz> quizOpt = quizRepository.findById(quizId);

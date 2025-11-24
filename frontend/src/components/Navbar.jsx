@@ -46,7 +46,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link to={getDashboardLink()} className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2">
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
                 <BookOpenIcon className="w-6 h-6 text-white" />
               </div>
@@ -56,14 +56,25 @@ const Navbar = () => {
 
           {/* Navigation Links */}
           <div className="flex items-center space-x-4">
-            {/* Dashboard Link */}
+            {/* Home Link */}
             <Link
-              to={getDashboardLink()}
+              to="/"
               className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
             >
-              {getRoleIcon()}
-              <span>Dashboard</span>
+              <BookOpenIcon className="w-5 h-5" />
+              <span>Courses</span>
             </Link>
+
+            {/* Dashboard Link */}
+            {user && (
+              <Link
+                to={getDashboardLink()}
+                className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+              >
+                {getRoleIcon()}
+                <span>Dashboard</span>
+              </Link>
+            )}
 
             {/* Admin specific links */}
             {isAdmin() && (
@@ -77,24 +88,41 @@ const Navbar = () => {
             )}
 
             {/* User Menu */}
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2 px-3 py-2 rounded-md bg-gray-50">
-                {getRoleIcon()}
-                <div className="text-sm">
-                  <div className="font-medium text-gray-900">{user?.name || user?.email}</div>
-                  <div className="text-gray-500">{getRoleName()}</div>
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-2 rounded-md bg-gray-50">
+                  {getRoleIcon()}
+                  <div className="text-sm">
+                    <div className="font-medium text-gray-900">{user?.name || user?.email}</div>
+                    <div className="text-gray-500">{getRoleName()}</div>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50"
-                title="Logout"
-              >
-                <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
-            </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50"
+                  title="Logout"
+                >
+                  <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

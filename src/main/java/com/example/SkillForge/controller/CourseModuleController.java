@@ -5,12 +5,12 @@ import com.example.SkillForge.entity.CourseModule;
 import com.example.SkillForge.entity.User;
 import com.example.SkillForge.repository.CourseModuleRepository;
 import com.example.SkillForge.repository.CourseRepository;
-import com.example.SkillForge.security.JWTUtil;
+import com.example.SkillForge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +27,7 @@ public class CourseModuleController {
     private CourseRepository courseRepository;
 
     @Autowired
-    private JWTUtil jwtUtil;
+    private UserService userService;
 
     // Get all modules for a course (public for enrolled students)
     @GetMapping
@@ -42,15 +42,10 @@ public class CourseModuleController {
 
     // Get all modules for instructor (including unpublished)
     @GetMapping("/manage")
-    public ResponseEntity<?> getModulesForInstructor(@PathVariable Long courseId, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> getModulesForInstructor(@PathVariable Long courseId, org.springframework.security.core.Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify course belongs to instructor
             Optional<Course> courseOpt = courseRepository.findById(courseId);
@@ -73,15 +68,10 @@ public class CourseModuleController {
 
     // Create new module
     @PostMapping
-    public ResponseEntity<?> createModule(@PathVariable Long courseId, @RequestBody CourseModule moduleData, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> createModule(@PathVariable Long courseId, @RequestBody CourseModule moduleData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify course belongs to instructor
             Optional<Course> courseOpt = courseRepository.findById(courseId);
@@ -113,16 +103,11 @@ public class CourseModuleController {
 
     // Update module
     @PutMapping("/{moduleId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> updateModule(@PathVariable Long courseId, @PathVariable Long moduleId, 
-                                        @RequestBody CourseModule moduleData, HttpServletRequest request) {
+                                        @RequestBody CourseModule moduleData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing module
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);
@@ -157,15 +142,10 @@ public class CourseModuleController {
 
     // Delete module
     @DeleteMapping("/{moduleId}")
-    public ResponseEntity<?> deleteModule(@PathVariable Long courseId, @PathVariable Long moduleId, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> deleteModule(@PathVariable Long courseId, @PathVariable Long moduleId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing module
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);
@@ -190,16 +170,11 @@ public class CourseModuleController {
 
     // Publish/Unpublish module
     @PutMapping("/{moduleId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> toggleModulePublish(@PathVariable Long courseId, @PathVariable Long moduleId, 
-                                               @RequestParam boolean published, HttpServletRequest request) {
+                                               @RequestParam boolean published, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing module
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);

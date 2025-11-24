@@ -6,14 +6,13 @@ import com.example.SkillForge.entity.User;
 import com.example.SkillForge.enums.ContentType;
 import com.example.SkillForge.repository.CourseModuleRepository;
 import com.example.SkillForge.repository.ModuleContentRepository;
-import com.example.SkillForge.security.JWTUtil;
 import com.example.SkillForge.service.CloudinaryVideoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,9 +31,6 @@ public class ModuleContentController {
     @Autowired
     private CloudinaryVideoService cloudinaryVideoService;
 
-    @Autowired
-    private JWTUtil jwtUtil;
-
     // Get all content for a module (public for enrolled students)
     @GetMapping
     public ResponseEntity<?> getModuleContent(@PathVariable Long moduleId) {
@@ -48,15 +44,9 @@ public class ModuleContentController {
 
     // Get all content for instructor (including unpublished)
     @GetMapping("/manage")
-    public ResponseEntity<?> getContentForInstructor(@PathVariable Long moduleId, HttpServletRequest request) {
+    public ResponseEntity<?> getContentForInstructor(@PathVariable Long moduleId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify module belongs to instructor
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);
@@ -79,20 +69,15 @@ public class ModuleContentController {
 
     // Upload video content
     @PostMapping("/video")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> uploadVideoContent(@PathVariable Long moduleId,
                                               @RequestParam("file") MultipartFile file,
                                               @RequestParam("title") String title,
                                               @RequestParam("description") String description,
                                               @RequestParam(value = "isFree", defaultValue = "false") boolean isFree,
-                                              HttpServletRequest request) {
+                                              Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify module belongs to instructor
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);
@@ -135,21 +120,16 @@ public class ModuleContentController {
 
     // Upload PDF content (notes or questions)
     @PostMapping("/pdf")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> uploadPdfContent(@PathVariable Long moduleId,
                                             @RequestParam("file") MultipartFile file,
                                             @RequestParam("title") String title,
                                             @RequestParam("description") String description,
                                             @RequestParam("contentType") String contentTypeStr,
                                             @RequestParam(value = "isFree", defaultValue = "false") boolean isFree,
-                                            HttpServletRequest request) {
+                                            Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Verify module belongs to instructor
             Optional<CourseModule> moduleOpt = courseModuleRepository.findById(moduleId);
@@ -207,16 +187,11 @@ public class ModuleContentController {
 
     // Update content
     @PutMapping("/{contentId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> updateContent(@PathVariable Long moduleId, @PathVariable Long contentId,
-                                         @RequestBody ModuleContent contentData, HttpServletRequest request) {
+                                         @RequestBody ModuleContent contentData, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing content
             Optional<ModuleContent> contentOpt = moduleContentRepository.findById(contentId);
@@ -254,15 +229,10 @@ public class ModuleContentController {
 
     // Delete content
     @DeleteMapping("/{contentId}")
-    public ResponseEntity<?> deleteContent(@PathVariable Long moduleId, @PathVariable Long contentId, HttpServletRequest request) {
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> deleteContent(@PathVariable Long moduleId, @PathVariable Long contentId, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing content
             Optional<ModuleContent> contentOpt = moduleContentRepository.findById(contentId);
@@ -286,17 +256,12 @@ public class ModuleContentController {
     }
 
     // Publish/Unpublish content
-    @PutMapping("/{contentId}/publish")
-    public ResponseEntity<?> toggleContentPublish(@PathVariable Long moduleId, @PathVariable Long contentId,
-                                                @RequestParam boolean published, HttpServletRequest request) {
+    @PatchMapping("/{contentId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> publishContent(@PathVariable Long moduleId, @PathVariable Long contentId,
+                                                @RequestParam boolean published, Authentication auth) {
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(401).body(Map.of("error", "No valid token provided"));
-            }
-
-            String token = authHeader.substring(7);
-            User instructor = jwtUtil.getUserFromToken(token);
+            User instructor = (User) auth.getPrincipal();
             
             // Find existing content
             Optional<ModuleContent> contentOpt = moduleContentRepository.findById(contentId);

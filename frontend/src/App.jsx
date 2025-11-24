@@ -4,11 +4,19 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
+import Home from './pages/Home';
+import ComprehensiveHome from './components/ComprehensiveHome';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
+import EnhancedStudentDashboard from './pages/EnhancedStudentDashboard';
+import ComprehensiveStudentDashboard from './components/ComprehensiveStudentDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
+import EnhancedInstructorDashboard from './pages/EnhancedInstructorDashboard';
+import ComprehensiveInstructorDashboard from './components/ComprehensiveInstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AuthTest from './components/AuthTest';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -69,12 +77,48 @@ const AppContent = () => {
         path="/student/dashboard"
         element={
           <ProtectedRoute requiredRole="STUDENT">
+            <ErrorBoundary>
+              <ComprehensiveStudentDashboard />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/dashboard/enhanced"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <EnhancedStudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/dashboard/legacy"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
             <StudentDashboard />
           </ProtectedRoute>
         }
       />
       <Route
         path="/instructor/dashboard"
+        element={
+          <ProtectedRoute requiredRole="INSTRUCTOR">
+            <ErrorBoundary>
+              <ComprehensiveInstructorDashboard />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/dashboard/enhanced"
+        element={
+          <ProtectedRoute requiredRole="INSTRUCTOR">
+            <EnhancedInstructorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/dashboard/legacy"
         element={
           <ProtectedRoute requiredRole="INSTRUCTOR">
             <InstructorDashboard />
@@ -90,16 +134,17 @@ const AppContent = () => {
         }
       />
 
+      {/* Home route */}
+      <Route path="/home" element={<ComprehensiveHome />} />
+      <Route path="/home/legacy" element={<Home />} />
+      
+      {/* Test route */}
+      <Route path="/test" element={<AuthTest />} />
+      
       {/* Default route */}
       <Route
         path="/"
-        element={
-          isAuthenticated() ? (
-            <Navigate to={getDefaultDashboard()} replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        element={<ComprehensiveHome />}
       />
 
       {/* Catch all route */}
