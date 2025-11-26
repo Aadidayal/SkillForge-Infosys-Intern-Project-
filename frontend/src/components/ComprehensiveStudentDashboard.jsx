@@ -22,8 +22,10 @@ const ComprehensiveStudentDashboard = () => {
     );
   }
   
-  const [activeTab, setActiveTab] = useState('browse');
-  const [courses, setCourses] = useState([]);
+  const [activeTab, setActiveTab] = useState('instructors');
+  const [instructors, setInstructors] = useState([]);
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [instructorCourses, setInstructorCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseContent, setCourseContent] = useState([]);
@@ -40,8 +42,8 @@ const ComprehensiveStudentDashboard = () => {
   });
 
   useEffect(() => {
-    // Fetch public courses (no token needed)
-    fetchCourses();
+    // Fetch instructors (no token needed)
+    fetchInstructors();
     
     // Fetch enrolled courses only if authenticated
     if (token) {
@@ -49,21 +51,41 @@ const ComprehensiveStudentDashboard = () => {
     }
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchCourses = async () => {
+  const fetchInstructors = async () => {
     try {
       setLoading(true);
-      // Fetch public courses (no authentication needed)
-      const response = await axios.get('http://localhost:8080/api/courses/public');
-      console.log('Public courses response:', response.data);
+      // Fetch instructors who have published courses
+      const response = await axios.get('http://localhost:8080/api/instructors/public');
+      console.log('Instructors response:', response.data);
       
-      if (response.data.success && response.data.courses) {
-        setCourses(response.data.courses);
+      if (response.data.success && response.data.instructors) {
+        setInstructors(response.data.instructors);
       } else {
-        setCourses([]);
+        setInstructors([]);
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      setCourses([]);
+      console.error('Error fetching instructors:', error);
+      setInstructors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInstructorCourses = async (instructorId) => {
+    try {
+      setLoading(true);
+      // Fetch public courses by specific instructor
+      const response = await axios.get(`http://localhost:8080/api/courses/public/instructor/${instructorId}`);
+      console.log('Instructor courses response:', response.data);
+      
+      if (response.data.success && response.data.courses) {
+        setInstructorCourses(response.data.courses);
+      } else {
+        setInstructorCourses([]);
+      }
+    } catch (error) {
+      console.error('Error fetching instructor courses:', error);
+      setInstructorCourses([]);
     } finally {
       setLoading(false);
     }
@@ -76,10 +98,12 @@ const ComprehensiveStudentDashboard = () => {
     }
     
     try {
-      const response = await axios.get('http://localhost:8080/api/student/enrolled-courses', getAxiosConfig());
-      setEnrolledCourses(Array.isArray(response.data) ? response.data : []);
+      // Use public courses endpoint - all courses are now accessible to students
+      const response = await axios.get('http://localhost:8080/api/courses/public');
+      const courses = response.data.courses || [];
+      setEnrolledCourses(Array.isArray(courses) ? courses : []);
     } catch (error) {
-      console.error('Error fetching enrolled courses:', error);
+      console.error('Error fetching courses:', error);
       setEnrolledCourses([]);
     }
   };
@@ -133,6 +157,21 @@ const ComprehensiveStudentDashboard = () => {
     setActiveTab('learning');
   };
 
+  const handleInstructorSelect = (instructor) => {
+    setSelectedInstructor(instructor);
+    setInstructorCourses([]);
+    setPreviewCourse(null);
+    setPreviewModules([]);
+    fetchInstructorCourses(instructor.id);
+  };
+
+  const handleBackToInstructors = () => {
+    setSelectedInstructor(null);
+    setInstructorCourses([]);
+    setPreviewCourse(null);
+    setPreviewModules([]);
+  };
+
   const handleCoursePreview = async (course) => {
     if (previewCourse?.id === course.id) {
       // Toggle off if same course
@@ -170,16 +209,100 @@ const ComprehensiveStudentDashboard = () => {
     }
   };
 
-  const renderCourseBrowser = () => (
+  const renderInstructorBrowser = () => {
+    if (selectedInstructor) {
+      return renderInstructorCourses();
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Browse Instructors</h2>
+          <p className="text-gray-600">Choose an instructor to see their courses</p>
+        </div>
+
+        {loading && <div className="text-center py-8">Loading instructors...</div>}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {instructors.map((instructor) => (
+            <div key={instructor.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                 onClick={() => handleInstructorSelect(instructor)}>
+              <div className="p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {instructor.firstName?.charAt(0)}{instructor.lastName?.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900">
+                      {instructor.firstName} {instructor.lastName}
+                    </h3>
+                    <p className="text-sm text-gray-600">{instructor.email}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Published Courses:</span>
+                    <span className="font-semibold text-blue-600">{instructor.courseCount || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm mt-2">
+                    <span className="text-gray-600">Total Students:</span>
+                    <span className="font-semibold text-green-600">{instructor.studentCount || 0}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-center">
+                  <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
+                    View Courses →
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {instructors.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No instructors available</h3>
+            <p className="mt-1 text-sm text-gray-500">Check back later for new instructors and courses.</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderInstructorCourses = () => (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Browse Courses</h2>
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={handleBackToInstructors}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+        >
+          ← Back to Instructors
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow-sm">
+        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <span className="text-lg font-bold text-blue-600">
+            {selectedInstructor?.firstName?.charAt(0)}{selectedInstructor?.lastName?.charAt(0)}
+          </span>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">
+            {selectedInstructor?.firstName} {selectedInstructor?.lastName}
+          </h2>
+          <p className="text-gray-600">Instructor Courses</p>
+        </div>
       </div>
 
       {loading && <div className="text-center py-8">Loading courses...</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => (
+        {instructorCourses.map((course) => (
           <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             {course.thumbnailUrl && (
               <img 
@@ -200,23 +323,12 @@ const ComprehensiveStudentDashboard = () => {
                 <span className="text-green-600 font-semibold text-lg">${course.price}</span>
               </div>
 
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <ClockIcon className="w-4 h-4" />
-                  <span>12 hours</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <AcademicCapIcon className="w-4 h-4" />
-                  <span>Beginner</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => handleCoursePreview(course)}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-center"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200 text-center"
                 >
-                  {previewCourse?.id === course.id ? 'Hide Preview' : 'Show Modules'}
+                  {previewCourse?.id === course.id ? 'Hide Modules' : 'Preview Modules'}
                 </button>
                 <button
                   onClick={() => enrollInCourse(course.id)}
@@ -229,24 +341,27 @@ const ComprehensiveStudentDashboard = () => {
 
               {/* Course Modules Preview */}
               {previewCourse?.id === course.id && (
-                <div className="mt-4 border-t pt-4">
+                <div className="border-t pt-4">
                   <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                     📚 Course Content ({previewModules.length} modules)
                   </h4>
                   {previewModules.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
                       {previewModules.map((module, index) => (
                         <div key={module.id} className="bg-gray-50 p-3 rounded border-l-4 border-blue-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm text-gray-900">
                                 Module {index + 1}: {module.title}
                               </p>
                               <p className="text-xs text-gray-600 mt-1">
                                 {module.description}
                               </p>
+                              <div className="mt-2 text-xs text-gray-500">
+                                📊 Preview only - Full content available after enrollment
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded ml-2">
                               🔒 Locked
                             </div>
                           </div>
@@ -254,16 +369,19 @@ const ComprehensiveStudentDashboard = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-gray-500 text-sm">
+                    <div className="text-center py-4 text-gray-500 text-sm bg-gray-50 rounded">
                       No modules available yet
                     </div>
                   )}
-                  <div className="mt-3 text-center">
+                  <div className="mt-3 p-3 bg-blue-50 rounded text-center">
+                    <p className="text-sm text-blue-700 mb-2">
+                      Ready to start learning? Enroll now to access all course materials!
+                    </p>
                     <button
                       onClick={() => enrollInCourse(course.id)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                     >
-                      → Enroll to access all content
+                      Enroll in Course
                     </button>
                   </div>
                 </div>
@@ -272,6 +390,14 @@ const ComprehensiveStudentDashboard = () => {
           </div>
         ))}
       </div>
+
+      {instructorCourses.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No courses available</h3>
+          <p className="mt-1 text-sm text-gray-500">This instructor hasn't published any courses yet.</p>
+        </div>
+      )}
     </div>
   );
 
@@ -288,10 +414,10 @@ const ComprehensiveStudentDashboard = () => {
           <p className="mt-1 text-sm text-gray-500">Get started by enrolling in a course.</p>
           <div className="mt-6">
             <button
-              onClick={() => setActiveTab('browse')}
+              onClick={() => setActiveTab('instructors')}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
-              Browse Courses
+              Browse Instructors
             </button>
           </div>
         </div>
@@ -397,10 +523,8 @@ const ComprehensiveStudentDashboard = () => {
                 <h4 className="font-semibold text-lg">
                   Module {module.moduleOrder}: {module.title}
                 </h4>
-                <span className={`px-2 py-1 rounded text-sm ${
-                  module.isPublished ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {module.isPublished ? 'Available' : 'Coming Soon'}
+                <span className="px-2 py-1 rounded text-sm bg-green-100 text-green-800">
+                  Available
                 </span>
               </div>
               <p className="text-gray-600 mt-2">{module.description}</p>
@@ -477,14 +601,18 @@ const ComprehensiveStudentDashboard = () => {
           
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('browse')}
+              onClick={() => {
+                setActiveTab('instructors');
+                setSelectedInstructor(null);
+                setInstructorCourses([]);
+              }}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'browse'
+                activeTab === 'instructors'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Browse Courses
+              Browse Instructors
             </button>
             <button
               onClick={() => setActiveTab('enrolled')}
@@ -512,7 +640,7 @@ const ComprehensiveStudentDashboard = () => {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {activeTab === 'browse' && renderCourseBrowser()}
+          {activeTab === 'instructors' && renderInstructorBrowser()}
           {activeTab === 'enrolled' && renderEnrolledCourses()}
           {activeTab === 'learning' && renderLearningInterface()}
         </div>

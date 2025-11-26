@@ -2,7 +2,7 @@ package com.example.SkillForge.config;
 
 import com.example.SkillForge.security.JwtAuthenticationFilter;
 import com.example.SkillForge.service.UserDetailsServiceImpl;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,29 +27,38 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
     
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
+    
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtAuthenticationFilter jwtAuthFilter) {
+        this.userDetailsService = userDetailsService;
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/courses/public/**").permitAll()
-                        .requestMatchers("/api/courses").permitAll()
-                        .requestMatchers("/api/test/**").permitAll()
-                        .requestMatchers("/api/student/**").hasRole("STUDENT")
-                        .requestMatchers("/api/instructor/**").hasRole("INSTRUCTOR")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/courses/**").authenticated()
-                        .requestMatchers("/api/videos/**").authenticated()
-                        .requestMatchers("/api/modules/**").authenticated()
-                        .requestMatchers("/api/quizzes/**").authenticated()
+                .authorizeRequests(auth -> auth
+                        .antMatchers("/api/auth/**").permitAll()
+                        .antMatchers("/api/courses/public/**").permitAll()
+                        .antMatchers("/api/courses").permitAll()
+                        .antMatchers("/api/courses/debug/**").permitAll()
+                        .antMatchers("/api/courses/*/modules").permitAll()
+                        .antMatchers("/api/modules/*/content").permitAll()
+                        .antMatchers("/api/quizzes/*/public").permitAll()
+                        .antMatchers("/api/instructors/public/**").permitAll()
+                        .antMatchers("/api/test/**").permitAll()
+                        .antMatchers("/api/student/**").hasRole("STUDENT")
+                        .antMatchers("/api/instructor/**").hasRole("INSTRUCTOR")
+                        .antMatchers("/api/admin/**").hasRole("ADMIN")
+                        .antMatchers("/api/courses/**").authenticated()
+                        .antMatchers("/api/videos/**").authenticated()
+                        .antMatchers("/api/modules/**").authenticated()
+                        .antMatchers("/api/quizzes/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -63,7 +72,8 @@ public class SecurityConfig {
     
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }

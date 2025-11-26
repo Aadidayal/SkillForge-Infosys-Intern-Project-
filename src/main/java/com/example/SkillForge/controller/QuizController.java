@@ -97,9 +97,7 @@ public class QuizController {
             }
 
             Quiz quiz = quizOpt.get();
-            if (!quiz.getIsPublished()) {
-                return ResponseEntity.status(403).body(Map.of("error", "Quiz is not published"));
-            }
+            // All quizzes are now accessible - no published check needed
 
             return ResponseEntity.ok(Map.of("quiz", quiz));
             
@@ -196,9 +194,7 @@ public class QuizController {
             }
             
             Quiz quiz = quizOpt.get();
-            if (!quiz.getIsPublished()) {
-                return ResponseEntity.status(403).body(Map.of("error", "Quiz is not published"));
-            }
+            // All quizzes are now accessible - no published check needed
 
             // Check if student has reached max attempts
             Long attemptCount = attemptRepository.countAttemptsByQuizAndStudent(quizId, student.getId());

@@ -2,25 +2,36 @@ package com.example.SkillForge.controller;
 
 import com.example.SkillForge.dto.DashboardResponse;
 import com.example.SkillForge.entity.User;
+import com.example.SkillForge.enums.Role;
+import com.example.SkillForge.enums.CourseStatus;
+import com.example.SkillForge.repository.UserRepository;
+import com.example.SkillForge.repository.CourseRepository;
+import com.example.SkillForge.repository.EnrollmentRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/instructor")
-@PreAuthorize("hasRole('INSTRUCTOR')")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class InstructorController {
     
+    private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    
     @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<DashboardResponse> getDashboard(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         
@@ -47,6 +58,7 @@ public class InstructorController {
     }
     
     @GetMapping("/courses")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getCourses(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         
@@ -59,6 +71,7 @@ public class InstructorController {
     }
     
     @GetMapping("/quiz-generator")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getQuizGenerator(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         
@@ -71,6 +84,7 @@ public class InstructorController {
     }
     
     @GetMapping("/analytics")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getAnalytics(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         
@@ -81,4 +95,5 @@ public class InstructorController {
         
         return ResponseEntity.ok(data);
     }
+
 }

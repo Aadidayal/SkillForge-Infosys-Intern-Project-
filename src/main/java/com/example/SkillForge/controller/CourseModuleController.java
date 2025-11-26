@@ -29,11 +29,11 @@ public class CourseModuleController {
     @Autowired
     private UserService userService;
 
-    // Get all modules for a course (public for enrolled students)
+    // Get all modules for a course (public for all students - no draft restrictions)
     @GetMapping
     public ResponseEntity<?> getCourseModules(@PathVariable Long courseId) {
         try {
-            List<CourseModule> modules = courseModuleRepository.findByCourseIdAndIsPublishedTrueOrderByModuleOrderAsc(courseId);
+            List<CourseModule> modules = courseModuleRepository.findByCourseIdOrderByModuleOrderAsc(courseId);
             return ResponseEntity.ok(Map.of("modules", modules));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Failed to fetch modules: " + e.getMessage()));

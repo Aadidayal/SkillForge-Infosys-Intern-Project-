@@ -3,7 +3,7 @@ package com.example.SkillForge.entity;
 import com.example.SkillForge.enums.VideoType;
 import com.example.SkillForge.enums.VideoStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

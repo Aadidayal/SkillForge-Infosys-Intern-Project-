@@ -1,8 +1,10 @@
 package com.example.SkillForge.controller;
 
 import com.example.SkillForge.entity.Course;
+import com.example.SkillForge.entity.CourseModule;
 import com.example.SkillForge.entity.User;
 import com.example.SkillForge.repository.CourseRepository;
+import com.example.SkillForge.repository.CourseModuleRepository;
 import com.example.SkillForge.enums.CourseStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class CourseController {
     
     private final CourseRepository courseRepository;
+    private final CourseModuleRepository courseModuleRepository;
     
 
     @GetMapping("/instructor")
@@ -257,7 +260,101 @@ public class CourseController {
     @GetMapping("/public")
     public ResponseEntity<?> getPublishedCourses() {
         try {
-            List<Course> courses = courseRepository.findByStatus(CourseStatus.PUBLISHED);
+            List<Course> courses = courseRepository.findAllWithInstructor();
+            
+            // Create a list of course DTOs with instructor info
+            List<Map<String, Object>> courseDTOs = courses.stream()
+                .map(course -> {
+                    Map<String, Object> courseDTO = new HashMap<>();
+                    courseDTO.put("id", course.getId());
+                    courseDTO.put("title", course.getTitle());
+                    courseDTO.put("description", course.getDescription());
+                    courseDTO.put("price", course.getPrice());
+                    courseDTO.put("thumbnailUrl", course.getThumbnailUrl());
+                    courseDTO.put("status", course.getStatus());
+                    courseDTO.put("createdAt", course.getCreatedAt());
+                    courseDTO.put("updatedAt", course.getUpdatedAt());
+                    
+                    // Add instructor information
+                    if (course.getInstructor() != null) {
+                        Map<String, Object> instructorDTO = new HashMap<>();
+                        instructorDTO.put("id", course.getInstructor().getId());
+                        instructorDTO.put("firstName", course.getInstructor().getFirstName());
+                        instructorDTO.put("lastName", course.getInstructor().getLastName());
+                        instructorDTO.put("email", course.getInstructor().getEmail());
+                        courseDTO.put("instructor", instructorDTO);
+                    }
+                    
+                    // Add module count (all modules - no draft restrictions)
+                    List<CourseModule> allModules = courseModuleRepository.findByCourseIdOrderByModuleOrderAsc(course.getId());
+                    courseDTO.put("moduleCount", allModules.size());
+                    courseDTO.put("totalModules", allModules.size());
+                    
+                    return courseDTO;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("courses", courseDTOs);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * Debug endpoint to check raw course data
+     */
+    @GetMapping("/public/debug")
+    public ResponseEntity<?> getDebugCourseData() {
+        try {
+            List<Course> courses = courseRepository.findAll();
+            
+            List<Map<String, Object>> debugData = courses.stream()
+                .map(course -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("courseId", course.getId());
+                    data.put("courseTitle", course.getTitle());
+                    data.put("status", course.getStatus());
+                    // Get the raw instructor_id from the database
+                    data.put("instructorObject", course.getInstructor());
+                    if (course.getInstructor() != null) {
+                        data.put("instructorId", course.getInstructor().getId());
+                        data.put("instructorEmail", course.getInstructor().getEmail());
+                    } else {
+                        data.put("instructorId", "NULL");
+                        data.put("instructorEmail", "NULL");
+                    }
+                    return data;
+                })
+                .collect(java.util.stream.Collectors.toList());
+                
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("courseData", debugData);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * Get published courses by a specific instructor
+     */
+    @GetMapping("/public/instructor/{instructorId}")
+    public ResponseEntity<?> getCoursesByInstructor(@PathVariable Long instructorId) {
+        try {
+            List<Course> courses = courseRepository.findByInstructorIdAndStatus(instructorId, CourseStatus.PUBLISHED);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -269,6 +366,31 @@ public class CourseController {
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * Debug endpoint to check module status for a specific course (public for debugging)
+     */
+    @GetMapping("/{courseId}/modules/debug")
+    public ResponseEntity<?> debugCourseModules(@PathVariable Long courseId) {
+        try {
+            List<CourseModule> allModules = courseModuleRepository.findByCourseIdOrderByModuleOrderAsc(courseId);
+            List<CourseModule> publishedModules = courseModuleRepository.findByCourseIdOrderByModuleOrderAsc(courseId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("courseId", courseId);
+            response.put("totalModules", allModules.size());
+            response.put("publishedModules", publishedModules.size());
+            response.put("allModules", allModules);
+            response.put("publishedModulesOnly", publishedModules);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

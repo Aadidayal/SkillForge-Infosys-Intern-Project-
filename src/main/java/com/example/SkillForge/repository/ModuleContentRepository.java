@@ -24,6 +24,6 @@ public interface ModuleContentRepository extends JpaRepository<ModuleContent, Lo
     @Query("SELECT MAX(mc.contentOrder) FROM ModuleContent mc WHERE mc.courseModule.id = :moduleId")
     Integer findMaxContentOrderByModuleId(@Param("moduleId") Long moduleId);
     
-    @Query("SELECT COUNT(mc) FROM ModuleContent mc WHERE mc.courseModule.id = :moduleId AND mc.isPublished = true")
+    @Query("SELECT COUNT(mc) FROM ModuleContent mc WHERE mc.courseModule.id = :moduleId")
     Long countPublishedContentByModuleId(@Param("moduleId") Long moduleId);
 }

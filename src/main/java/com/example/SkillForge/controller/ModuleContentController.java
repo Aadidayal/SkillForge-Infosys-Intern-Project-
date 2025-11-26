@@ -35,7 +35,7 @@ public class ModuleContentController {
     @GetMapping
     public ResponseEntity<?> getModuleContent(@PathVariable Long moduleId) {
         try {
-            List<ModuleContent> content = moduleContentRepository.findByCourseModuleIdAndIsPublishedTrueOrderByContentOrderAsc(moduleId);
+            List<ModuleContent> content = moduleContentRepository.findByCourseModuleIdOrderByContentOrderAsc(moduleId);
             return ResponseEntity.ok(Map.of("content", content));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Failed to fetch content: " + e.getMessage()));

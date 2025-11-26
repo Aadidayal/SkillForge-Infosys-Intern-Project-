@@ -17,6 +17,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Query("SELECT q FROM Quiz q WHERE q.moduleContent.courseModule.course.instructor.id = :instructorId")
     List<Quiz> findByInstructorId(@Param("instructorId") Long instructorId);
     
-    @Query("SELECT q FROM Quiz q WHERE q.moduleContent.courseModule.course.id = :courseId AND q.isPublished = true")
+    @Query("SELECT q FROM Quiz q WHERE q.moduleContent.courseModule.course.id = :courseId")
     List<Quiz> findPublishedQuizzesByCourseId(@Param("courseId") Long courseId);
 }

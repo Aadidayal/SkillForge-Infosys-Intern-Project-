@@ -1,7 +1,7 @@
 package com.example.SkillForge.entity;
 
 import com.example.SkillForge.enums.Role;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

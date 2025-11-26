@@ -5,7 +5,7 @@ import com.example.SkillForge.dto.AuthResponse;
 import com.example.SkillForge.dto.LoginRequest;
 import com.example.SkillForge.dto.RegisterRequest;
 import com.example.SkillForge.service.AuthService;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

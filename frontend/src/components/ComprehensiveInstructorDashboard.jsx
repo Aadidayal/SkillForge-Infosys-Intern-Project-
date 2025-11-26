@@ -346,6 +346,32 @@ const ComprehensiveInstructorDashboard = () => {
     }
   };
 
+  const publishModule = async (courseId, moduleId, publish = true) => {
+    if (!token || !courseId || !moduleId) {
+      alert('Authentication required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `http://localhost:8080/api/courses/${courseId}/modules/${moduleId}/publish?published=${publish}`,
+        {},
+        getAxiosConfig()
+      );
+      
+      if (response.data.success || response.data.message) {
+        alert(response.data.message || `Module ${publish ? 'published' : 'unpublished'} successfully`);
+        fetchModules(selectedCourse.id); // Refresh modules to show updated status
+      }
+    } catch (error) {
+      console.error('Error publishing module:', error);
+      alert('Error: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderCourses = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -520,16 +546,28 @@ const ComprehensiveInstructorDashboard = () => {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => {
-                      setContentForm({ ...contentForm, moduleId: module.id });
-                      setShowContentModal(true);
-                    }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Add Content
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => publishModule(selectedCourse.id, module.id, !module.isPublished)}
+                      className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                        module.isPublished 
+                          ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {module.isPublished ? '🔒 Unpublish' : '🌟 Publish'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setContentForm({ ...contentForm, moduleId: module.id });
+                        setShowContentModal(true);
+                      }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Add Content
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
