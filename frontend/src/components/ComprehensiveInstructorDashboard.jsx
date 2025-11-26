@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const ComprehensiveInstructorDashboard = () => {
-  const { user, token } = useContext(AuthContext);
+  const { user, token, logout } = useContext(AuthContext);
   
   // Early return if no user or token
   if (!user || !token) {
@@ -95,6 +95,16 @@ const ComprehensiveInstructorDashboard = () => {
     }
   };
 
+  const fetchModuleContent = async (moduleId) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/modules/${moduleId}/content/manage`, getAxiosConfig());
+      return response.data.content || [];
+    } catch (error) {
+      console.error('Error fetching content for module', moduleId, ':', error);
+      return [];
+    }
+  };
+
   const fetchModules = async (courseId) => {
     if (!token || !courseId) {
       console.warn('Missing token or courseId for fetching modules');
@@ -102,8 +112,28 @@ const ComprehensiveInstructorDashboard = () => {
     }
     
     try {
-      const response = await axios.get(`http://localhost:8080/api/courses/${courseId}/modules`, getAxiosConfig());
-      setModules(Array.isArray(response.data) ? response.data : []);
+      console.log('Fetching modules for course:', courseId);
+      const response = await axios.get(`http://localhost:8080/api/courses/${courseId}/modules/manage`, getAxiosConfig());
+      console.log('Modules API response:', response.data);
+      
+      // Handle different response structures
+      let modulesData = [];
+      if (response.data && response.data.modules && Array.isArray(response.data.modules)) {
+        modulesData = response.data.modules;
+      } else if (Array.isArray(response.data)) {
+        modulesData = response.data;
+      }
+      
+      // Fetch content for each module
+      const modulesWithContent = await Promise.all(
+        modulesData.map(async (module) => {
+          const content = await fetchModuleContent(module.id);
+          return { ...module, content };
+        })
+      );
+      
+      console.log('Setting modules with content:', modulesWithContent);
+      setModules(modulesWithContent);
     } catch (error) {
       console.error('Error fetching modules:', error);
       setModules([]);
@@ -160,15 +190,37 @@ const ComprehensiveInstructorDashboard = () => {
     
     try {
       setLoading(true);
-      const response = await axios.post(
+      
+      // First create the module
+      const moduleData = {
+        title: moduleForm.title,
+        description: moduleForm.description,
+        moduleOrder: moduleForm.moduleOrder
+      };
+      
+      const moduleResponse = await axios.post(
         `http://localhost:8080/api/courses/${selectedCourse.id}/modules`,
-        moduleForm,
+        moduleData,
         getAxiosConfig()
       );
+      
+      const createdModule = moduleResponse.data;
+      console.log('Module creation response:', moduleResponse.data);
+      console.log('Created module:', createdModule);
+      
+      alert('Module created successfully!');
+      
       setShowModuleModal(false);
       setModuleForm({ title: '', description: '', moduleOrder: 1 });
-      fetchModules(selectedCourse.id);
-      alert('Module created successfully!');
+      setUploadProgress(0);
+      
+      // Add a small delay then refresh modules to ensure backend processing is complete
+      console.log('Scheduling module refresh for course:', selectedCourse.id);
+      setTimeout(() => {
+        console.log('Executing delayed module refresh...');
+        fetchModules(selectedCourse.id);
+      }, 500);
+      
     } catch (error) {
       console.error('Error creating module:', error);
       alert('Error creating module: ' + (error.response?.data?.message || error.message));
@@ -179,13 +231,35 @@ const ComprehensiveInstructorDashboard = () => {
 
   const uploadContent = async (e) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!contentForm.file) {
+      alert('Please select a file to upload');
+      return;
+    }
+    
+    if (!contentForm.title.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+    
+    if (!contentForm.description.trim()) {
+      alert('Please enter a description');
+      return;
+    }
+    
     try {
       setLoading(true);
       const formData = new FormData();
-      formData.append('contentType', contentForm.contentType);
-      formData.append('title', contentForm.title);
-      formData.append('description', contentForm.description);
-      if (contentForm.file) formData.append('file', contentForm.file);
+      formData.append('title', contentForm.title.trim());
+      formData.append('description', contentForm.description.trim());
+      formData.append('isFree', 'false'); // Default to paid content
+      formData.append('file', contentForm.file);
+
+      // For PDF uploads, add contentType parameter
+      if (contentForm.contentType !== 'VIDEO') {
+        formData.append('contentType', contentForm.contentType);
+      }
 
       const config = {
         headers: {
@@ -198,19 +272,33 @@ const ComprehensiveInstructorDashboard = () => {
         }
       };
 
-      const response = await axios.post(
-        `http://localhost:8080/api/modules/${contentForm.moduleId}/content`,
-        formData,
-        config
-      );
+      // Determine the correct endpoint based on content type
+      const endpoint = contentForm.contentType === 'VIDEO' 
+        ? `http://localhost:8080/api/modules/${contentForm.moduleId}/content/video`
+        : `http://localhost:8080/api/modules/${contentForm.moduleId}/content/pdf`;
+      
+      console.log('Uploading to endpoint:', endpoint);
+      console.log('Form data:', Object.fromEntries(formData));
+      console.log('Content type:', contentForm.contentType);
+      console.log('File:', contentForm.file);
+      
+      const response = await axios.post(endpoint, formData, config);
       
       setShowContentModal(false);
       setContentForm({ moduleId: '', contentType: 'VIDEO', title: '', description: '', file: null });
       setUploadProgress(0);
       alert('Content uploaded successfully!');
+      
+      // Refresh modules to show new content
+      if (selectedCourse?.id) {
+        fetchModules(selectedCourse.id);
+      }
     } catch (error) {
       console.error('Error uploading content:', error);
-      alert('Error uploading content: ' + (error.response?.data?.message || error.message));
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error headers:', error.response?.headers);
+      alert('Error uploading content: ' + (error.response?.data?.error || error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -230,6 +318,32 @@ const ComprehensiveInstructorDashboard = () => {
     
     // Store in sessionStorage for persistence
     sessionStorage.setItem('selectedCourse', JSON.stringify(course));
+  };
+
+  const publishCourse = async (courseId, publish = true) => {
+    if (!token || !courseId) {
+      alert('Authentication required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `http://localhost:8080/api/courses/${courseId}/publish?publish=${publish}`,
+        {},
+        getAxiosConfig()
+      );
+      
+      if (response.data.success) {
+        alert(response.data.message);
+        fetchCourses(); // Refresh courses to show updated status
+      }
+    } catch (error) {
+      console.error('Error publishing course:', error);
+      alert('Error: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderCourses = () => (
@@ -268,12 +382,33 @@ const ComprehensiveInstructorDashboard = () => {
                   {course.status}
                 </span>
               </div>
-              <button
-                onClick={() => handleCourseSelect(course)}
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-              >
-                Manage Course
-              </button>
+              
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleCourseSelect(course)}
+                  className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                >
+                  Manage Course
+                </button>
+                
+                {course.status === 'PUBLISHED' ? (
+                  <button
+                    onClick={() => publishCourse(course.id, false)}
+                    disabled={loading}
+                    className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:opacity-50"
+                  >
+                    🔒 Unpublish
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => publishCourse(course.id, true)}
+                    disabled={loading}
+                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+                  >
+                    🌟 Publish Course
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -301,6 +436,14 @@ const ComprehensiveInstructorDashboard = () => {
             className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg"
           >
             Back to Courses
+          </button>
+          <button
+            onClick={() => selectedCourse && fetchModules(selectedCourse.id)}
+            className="text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+            disabled={!selectedCourse}
+            title="Refresh module list"
+          >
+            🔄 Refresh
           </button>
           <button
             onClick={() => {
@@ -347,7 +490,35 @@ const ComprehensiveInstructorDashboard = () => {
                       }`}>
                         {module.isPublished ? 'Published' : 'Draft'}
                       </span>
+                      <span className="text-xs text-gray-400">
+                        ID: {module.id}
+                      </span>
                     </div>
+                    
+                    {/* Module Content Display */}
+                    {module.content && module.content.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-sm font-medium text-gray-700">📁 Module Content:</h4>
+                        {module.content.map((content) => (
+                          <div key={content.id} className="flex items-center justify-between bg-gray-50 p-3 rounded">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">
+                                {content.contentType === 'VIDEO' ? '🎥' : '📄'}
+                              </span>
+                              <div>
+                                <p className="font-medium text-sm">{content.title}</p>
+                                <p className="text-xs text-gray-500">{content.contentType}</p>
+                              </div>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              content.isPublished ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+                            }`}>
+                              {content.isPublished ? 'Published' : 'Draft'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -391,6 +562,20 @@ const ComprehensiveInstructorDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Instructor Dashboard</h1>
                 <p className="text-sm text-gray-500">Welcome back, {user?.firstName}</p>
               </div>
+            </div>
+            
+            {/* User Info and Logout */}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+              >
+                🚪 Logout
+              </button>
             </div>
           </div>
           
@@ -541,12 +726,13 @@ const ComprehensiveInstructorDashboard = () => {
                 className="w-full p-3 border rounded-lg"
                 required
               />
+              
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Module'}
+                {loading ? 'Creating Module...' : 'Create Module'}
               </button>
             </form>
           </div>
@@ -570,10 +756,9 @@ const ComprehensiveInstructorDashboard = () => {
                 className="w-full p-3 border rounded-lg"
                 required
               >
-                <option value="VIDEO">Video</option>
-                <option value="PDF_NOTES">PDF Notes</option>
-                <option value="PDF_QUESTIONS">PDF Questions</option>
-                <option value="QUIZ">Quiz</option>
+                <option value="VIDEO">🎥 Video Content</option>
+                <option value="PDF_NOTES">📄 PDF Notes</option>
+                <option value="PDF_QUESTIONS">📝 PDF Questions/Assignments</option>
               </select>
               <input
                 type="text"
@@ -592,7 +777,7 @@ const ComprehensiveInstructorDashboard = () => {
               />
               <input
                 type="file"
-                accept={contentForm.contentType === 'VIDEO' ? 'video/*' : '.pdf'}
+                accept={contentForm.contentType === 'VIDEO' ? 'video/*' : 'application/pdf,.pdf'}
                 onChange={(e) => setContentForm({ ...contentForm, file: e.target.files[0] })}
                 className="w-full p-3 border rounded-lg"
                 required

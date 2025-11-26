@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

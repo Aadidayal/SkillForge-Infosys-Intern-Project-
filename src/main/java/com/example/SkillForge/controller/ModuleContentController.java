@@ -101,7 +101,17 @@ public class ModuleContentController {
             content.setContentType(ContentType.VIDEO);
             content.setVideoUrl((String) uploadResult.get("secure_url"));
             content.setThumbnailUrl((String) uploadResult.get("thumbnail_url"));
-            content.setDurationSeconds((Integer) uploadResult.get("duration"));
+            
+            // Handle duration - Cloudinary returns Double, convert to Integer
+            Object durationObj = uploadResult.get("duration");
+            if (durationObj instanceof Double) {
+                content.setDurationSeconds(((Double) durationObj).intValue());
+            } else if (durationObj instanceof Integer) {
+                content.setDurationSeconds((Integer) durationObj);
+            } else if (durationObj != null) {
+                content.setDurationSeconds(Double.valueOf(durationObj.toString()).intValue());
+            }
+            
             content.setFileSize(file.getSize());
             content.setIsFree(isFree);
             content.setIsPublished(false); // Default to unpublished

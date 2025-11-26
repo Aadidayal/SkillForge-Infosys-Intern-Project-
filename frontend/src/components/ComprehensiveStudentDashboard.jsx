@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const ComprehensiveStudentDashboard = () => {
-  const { user, token } = useContext(AuthContext);
+  const { user, token, logout } = useContext(AuthContext);
   
   // Early return if no user or token
   if (!user || !token) {
@@ -28,6 +28,8 @@ const ComprehensiveStudentDashboard = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseContent, setCourseContent] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [previewCourse, setPreviewCourse] = useState(null);
+  const [previewModules, setPreviewModules] = useState([]);
 
   // Configure axios defaults (function to get fresh token)
   const getAxiosConfig = () => ({
@@ -38,22 +40,27 @@ const ComprehensiveStudentDashboard = () => {
   });
 
   useEffect(() => {
+    // Fetch public courses (no token needed)
+    fetchCourses();
+    
+    // Fetch enrolled courses only if authenticated
     if (token) {
-      fetchCourses();
       fetchEnrolledCourses();
     }
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCourses = async () => {
-    if (!token) {
-      console.warn('No token available for fetching courses');
-      return;
-    }
-    
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:8080/api/courses', getAxiosConfig());
-      setCourses(Array.isArray(response.data) ? response.data : []);
+      // Fetch public courses (no authentication needed)
+      const response = await axios.get('http://localhost:8080/api/courses/public');
+      console.log('Public courses response:', response.data);
+      
+      if (response.data.success && response.data.courses) {
+        setCourses(response.data.courses);
+      } else {
+        setCourses([]);
+      }
     } catch (error) {
       console.error('Error fetching courses:', error);
       setCourses([]);
@@ -78,14 +85,21 @@ const ComprehensiveStudentDashboard = () => {
   };
 
   const fetchCourseContent = async (courseId) => {
-    if (!token || !courseId) {
-      console.warn('Missing token or courseId for fetching content');
+    if (!courseId) {
+      console.warn('Missing courseId for fetching content');
       return;
     }
     
     try {
-      const response = await axios.get(`http://localhost:8080/api/courses/${courseId}/modules`, getAxiosConfig());
-      setCourseContent(Array.isArray(response.data) ? response.data : []);
+      // Fetch public modules (published only) - no authentication needed for preview
+      const response = await axios.get(`http://localhost:8080/api/courses/${courseId}/modules`);
+      console.log('Course modules response:', response.data);
+      
+      if (response.data.modules) {
+        setCourseContent(response.data.modules);
+      } else {
+        setCourseContent([]);
+      }
     } catch (error) {
       console.error('Error fetching course content:', error);
       setCourseContent([]);
@@ -117,6 +131,28 @@ const ComprehensiveStudentDashboard = () => {
     setSelectedCourse(course);
     fetchCourseContent(course.id);
     setActiveTab('learning');
+  };
+
+  const handleCoursePreview = async (course) => {
+    if (previewCourse?.id === course.id) {
+      // Toggle off if same course
+      setPreviewCourse(null);
+      setPreviewModules([]);
+      return;
+    }
+    
+    setPreviewCourse(course);
+    try {
+      const response = await axios.get(`http://localhost:8080/api/courses/${course.id}/modules`);
+      if (response.data.modules) {
+        setPreviewModules(response.data.modules);
+      } else {
+        setPreviewModules([]);
+      }
+    } catch (error) {
+      console.error('Error fetching course modules for preview:', error);
+      setPreviewModules([]);
+    }
   };
 
   const getContentIcon = (contentType) => {
@@ -177,10 +213,10 @@ const ComprehensiveStudentDashboard = () => {
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleCourseSelect(course)}
+                  onClick={() => handleCoursePreview(course)}
                   className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-center"
                 >
-                  Preview
+                  {previewCourse?.id === course.id ? 'Hide Preview' : 'Show Modules'}
                 </button>
                 <button
                   onClick={() => enrollInCourse(course.id)}
@@ -190,6 +226,48 @@ const ComprehensiveStudentDashboard = () => {
                   Enroll Now
                 </button>
               </div>
+
+              {/* Course Modules Preview */}
+              {previewCourse?.id === course.id && (
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    📚 Course Content ({previewModules.length} modules)
+                  </h4>
+                  {previewModules.length > 0 ? (
+                    <div className="space-y-2">
+                      {previewModules.map((module, index) => (
+                        <div key={module.id} className="bg-gray-50 p-3 rounded border-l-4 border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">
+                                Module {index + 1}: {module.title}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {module.description}
+                              </p>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              🔒 Locked
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      No modules available yet
+                    </div>
+                  )}
+                  <div className="mt-3 text-center">
+                    <button
+                      onClick={() => enrollInCourse(course.id)}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      → Enroll to access all content
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -380,6 +458,20 @@ const ComprehensiveStudentDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
                 <p className="text-sm text-gray-500">Welcome back, {user?.firstName}</p>
               </div>
+            </div>
+            
+            {/* User Info and Logout */}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+              >
+                🚪 Logout
+              </button>
             </div>
           </div>
           

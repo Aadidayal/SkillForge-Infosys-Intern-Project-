@@ -211,6 +211,47 @@ public class CourseController {
     }
     
     /**
+     * Publish/Unpublish course (Instructor only)
+     */
+    @PutMapping("/{courseId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> publishCourse(@PathVariable Long courseId, @RequestParam boolean publish, Authentication auth) {
+        try {
+            User instructor = (User) auth.getPrincipal();
+            
+            Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+                
+            // Verify course belongs to instructor
+            if (!course.getInstructor().getId().equals(instructor.getId())) {
+                throw new SecurityException("Access denied: Course does not belong to you");
+            }
+            
+            // Update course status
+            course.setStatus(publish ? CourseStatus.PUBLISHED : CourseStatus.DRAFT);
+            courseRepository.save(course);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Course " + (publish ? "published" : "unpublished") + " successfully");
+            response.put("course", course);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (SecurityException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * Get all published courses (for students and public)
      */
     @GetMapping("/public")
