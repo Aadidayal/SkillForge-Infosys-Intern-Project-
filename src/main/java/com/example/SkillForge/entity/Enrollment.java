@@ -1,6 +1,7 @@
 package com.example.SkillForge.entity;
 
 import com.example.SkillForge.enums.PaymentStatus;
+import com.example.SkillForge.enums.EnrollmentStatus;
 import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,6 +41,13 @@ public class Enrollment {
     
     @Column(name = "progress_percentage")
     private Integer progressPercentage = 0; // 0-100
+    
+    @Column(name = "overall_score")
+    private Double overallScore = 0.0;
+    
+    @Column(name = "enrollment_status")
+    @Enumerated(EnumType.STRING)
+    private EnrollmentStatus enrollmentStatus = EnrollmentStatus.ACTIVE;
     
     @Column(name = "completed_at")
     private LocalDateTime completedAt;

@@ -27,7 +27,7 @@ public class DatabaseCleanupService implements ApplicationRunner {
                 .stream()
                 .filter(course -> course.getThumbnailUrl() != null && 
                                 course.getThumbnailUrl().contains("placeholder.com"))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
             
             if (!coursesWithPlaceholders.isEmpty()) {
                 System.out.println("Cleaning up " + coursesWithPlaceholders.size() + " courses with old placeholder URLs...");

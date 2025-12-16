@@ -6,6 +6,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Pages
 import Home from './pages/Home';
 import ComprehensiveHome from './components/ComprehensiveHome';
+import LandingPage3D from './pages/LandingPage3D';
+import TopicBasedCoursePage from './pages/TopicBasedCoursePage';
+import ProgressDashboard from './pages/ProgressDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
@@ -135,8 +138,27 @@ const AppContent = () => {
       />
 
       {/* Home route */}
-      <Route path="/home" element={<ComprehensiveHome />} />
-      <Route path="/home/legacy" element={<Home />} />
+      <Route path="/home" element={<LandingPage3D />} />
+      <Route path="/home/legacy" element={<ComprehensiveHome />} />
+      <Route path="/home/classic" element={<Home />} />
+      
+      {/* Course Routes */}
+      <Route
+        path="/courses/:courseId"
+        element={
+          <ProtectedRoute>
+            <TopicBasedCoursePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/progress"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <ProgressDashboard />
+          </ProtectedRoute>
+        }
+      />
       
       {/* Test route */}
       <Route path="/test" element={<AuthTest />} />
@@ -144,7 +166,7 @@ const AppContent = () => {
       {/* Default route */}
       <Route
         path="/"
-        element={<ComprehensiveHome />}
+        element={<LandingPage3D />}
       />
 
       {/* Catch all route */}

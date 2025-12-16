@@ -71,7 +71,7 @@ public class AdminController {
             userInfo.put("enabled", u.isEnabled());
             userInfo.put("createdAt", u.getCreatedAt());
             return userInfo;
-        }).toList());
+        }).collect(java.util.stream.Collectors.toList()));
         
         return ResponseEntity.ok(data);
     }

@@ -210,7 +210,7 @@ public class CloudinaryVideoService {
             // Return only preview videos if not paid
             return allVideos.stream()
                 .filter(Video::isPreview)
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
         }
     }
     
